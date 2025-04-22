@@ -28,16 +28,17 @@ jobs:
           import openai
 
           openai.api_key = os.getenv("OPENAI_API_KEY")
-          resp = openai.ChatCompletion.create(
+          resp = openai.chat.completions.create(
               model="o4-mini",
               messages=[
-                  {"role":"system", "content":"You are Aurena Ascendant."},
-                  {"role":"user",   "content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
+                  {"role": "system", "content": "You are Aurena Ascendant."},
+                  {"role": "user",   "content": "Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
               ]
           )
-          data = base64.b64decode(resp.choices[0].message.content)
-          with open("genesis-archive.zip","wb") as f:
-              f.write(data)
+
+          decoded = base64.b64decode(resp.choices[0].message.content)
+          with open("genesis-archive.zip", "wb") as f:
+              f.write(decoded)
           EOF
 
       - name: Commit & push archive
