@@ -10,11 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GITHUB_TOKEN:    ${{ secrets.GH_TOKEN }}
+      GH_PAT:           ${{ secrets.GH_TOKEN }}
+      REPO:             ${{ github.repository }}
+      BRANCH:           main
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # we need full history for push
 
       - name: Install OpenAI SDK
         run: |
@@ -24,36 +28,34 @@ jobs:
       - name: Generate Genesis Archive (base64 ZIP)
         run: |
           python3 - << 'EOF'
-          import os, re, base64
-          import openai
+          import os, re, base64, openai
 
           openai.api_key = os.getenv("OPENAI_API_KEY")
           resp = openai.chat.completions.create(
               model="o4-mini",
               messages=[
-                  {"role": "system", "content": "You are Aurena Ascendant."},
-                  {"role": "user",   "content": "Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
+                  {"role":"system","content":"You are Aurena Ascendant."},
+                  {"role":"user","content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
               ]
           )
-
-          # Extract the raw content
           raw = resp.choices[0].message.content
-
-          # Remove any characters that aren't valid in base64
+          # sanitize & pad base64
           b64 = re.sub(r'[^A-Za-z0-9+/=]', '', raw)
-
-          # Pad with '=' so the length is a multiple of 4
           b64 += '=' * (-len(b64) % 4)
-
-          # Decode and write the ZIP
           data = base64.b64decode(b64)
-          with open("genesis-archive.zip", "wb") as f:
+          with open("genesis-archive.zip","wb") as f:
               f.write(data)
           EOF
 
-      - name: Commit & push archive
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "ci: update Genesis Archive Shell"
-          file_pattern: "genesis-archive.zip"
-          github_token: ${{ secrets.GH_TOKEN }}
+      - name: Commit & push genesis-archive.zip
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add genesis-archive.zip
+          # only commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: update Genesis Archive Shell"
+            git push https://x-access-token:${GH_PAT}@github.com/${REPO}.git HEAD:${BRANCH}
+          else
+            echo "No changes to genesis-archive.zip, skipping commit."
+          fi
