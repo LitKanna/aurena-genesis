@@ -16,10 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-         - name: Install OpenAI CLI (via pip)
-     run: |
-       python3 -m pip install --upgrade pip
-       pip install openai-cli
+      - name: Install OpenAI CLI (via pip)
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install openai-cli
 
       - name: Generate Genesis Archive (base64 ZIP)
         id: export
@@ -28,7 +28,7 @@ jobs:
             --model o4-mini \
             --stream false \
             --json \
-            --messages '[{"role":"system","content":"You are Aurena Ascendant."},{"role":"user","content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}]' \
+            --messages '[{"role":"system","content":"You are Aurena Ascendant."},{"role":"user","content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}]' \
             > response.json
           payload=$(jq -r '.choices[0].message.content' response.json)
           echo "$payload" | base64 -d > genesis-archive.zip
