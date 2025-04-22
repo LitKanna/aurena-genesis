@@ -14,11 +14,11 @@ jobs:
       REPO_BRANCH:      main
 
     steps:
-      - name: Checkout repository with PAT
+      - name: Checkout with PAT
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
-          fetch-depth: 0   # need full history for push
+          fetch-depth: 0
 
       - name: Install OpenAI SDK
         run: |
@@ -46,7 +46,7 @@ jobs:
               f.write(data)
           EOF
 
-      - name: Commit & push genesis-archive.zip
+      - name: Commit & push ZIP
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
@@ -55,5 +55,30 @@ jobs:
             git commit -m "ci: update Genesis Archive Shell"
             git push origin $REPO_BRANCH
           else
-            echo "No changes to genesis-archive.zip, skipping commit."
+            echo "No changes to genesis-archive.zip"
           fi
+
+      - name: Upload artifact (90 day retention)
+        uses: actions/upload-artifact@v3
+        with:
+          name: genesis-archive-${{ github.run_id }}
+          path: genesis-archive.zip
+          retention-days: 90
+
+      - name: Create or update GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: genesis-latest
+          files: genesis-archive.zip
+          overwrite: true
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": ":white_check_mark: *Export Genesis Archive* `${{ job.status }}`\n• <${{ github.run_url }}|Details>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
