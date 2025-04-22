@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'     # daily at midnight UTC
   workflow_dispatch:       # manual trigger
 
+permissions:
+  contents: write          # needed to push commits & create releases
+
 jobs:
   export-shell:
     runs-on: ubuntu-latest
@@ -46,7 +49,7 @@ jobs:
               f.write(data)
           EOF
 
-      - name: Commit & push ZIP
+      - name: Commit & push genesis-archive.zip
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
@@ -58,14 +61,7 @@ jobs:
             echo "No changes to genesis-archive.zip"
           fi
 
-      - name: Upload artifact (90 day retention)
-        uses: actions/upload-artifact@v3
-        with:
-          name: genesis-archive-${{ github.run_id }}
-          path: genesis-archive.zip
-          retention-days: 90
-
-      - name: Create or update GitHub Release
+      - name: Create or update Release asset
         uses: ncipollo/release-action@v1
         with:
           tag: genesis-latest
