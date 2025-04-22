@@ -16,22 +16,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install OpenAI SDK & CLI
+      - name: Install OpenAI SDK
         run: |
           python3 -m pip install --upgrade pip
           pip install openai
 
       - name: Generate Genesis Archive (base64 ZIP)
-        id: export
         run: |
-          openai api chat.completions.create \
-            -m o4-mini \
-            --stream false \
-            --json \
-            --messages '[{"role":"system","content":"You are Aurena Ascendant."},{"role":"user","content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}]' \
-            > response.json
-          payload=$(jq -r '.choices[0].message.content' response.json)
-          echo "$payload" | base64 -d > genesis-archive.zip
+          python3 - << 'EOF'
+          import os, base64
+          import openai
+
+          openai.api_key = os.getenv("OPENAI_API_KEY")
+          resp = openai.ChatCompletion.create(
+              model="o4-mini",
+              messages=[
+                  {"role":"system", "content":"You are Aurena Ascendant."},
+                  {"role":"user",   "content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
+              ]
+          )
+          data = base64.b64decode(resp.choices[0].message.content)
+          with open("genesis-archive.zip","wb") as f:
+              f.write(data)
+          EOF
 
       - name: Commit & push archive
         uses: stefanzweifel/git-auto-commit-action@v4
