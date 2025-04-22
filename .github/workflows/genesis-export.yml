@@ -16,10 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install OpenAI CLI
-        run: |
-          curl -sSL https://raw.githubusercontent.com/openai/openai-cli/main/install.sh | bash
-          echo 'export PATH="$HOME/.local/bin:$PATH"' >> $GITHUB_ENV
+         - name: Install OpenAI CLI (via pip)
+     run: |
+       python3 -m pip install --upgrade pip
+       pip install openai-cli
 
       - name: Generate Genesis Archive (base64 ZIP)
         id: export
