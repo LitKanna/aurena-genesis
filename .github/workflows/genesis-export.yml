@@ -2,19 +2,18 @@ name: Export Genesis Archive
 
 on:
   schedule:
-    - cron: '0 0 * * *'     # daily at midnight UTC
-  workflow_dispatch:       # manual trigger
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write          # allow pushing commits & managing releases
+  contents: write
 
 jobs:
   export-shell:
     runs-on: ubuntu-latest
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GH_PAT:           ${{ secrets.GH_TOKEN }}
-      REPO_BRANCH:      main
+      GH_PAT:       ${{ secrets.GH_TOKEN }}
+      REPO_BRANCH:  main
 
     steps:
       - name: Checkout with PAT
@@ -23,38 +22,20 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           fetch-depth: 0
 
-      - name: Install OpenAI SDK
+      - name: Archive repository contents
         run: |
-          python3 -m pip install --upgrade pip
-          pip install openai
-
-      - name: Generate Genesis Archive (base64 ZIP)
-        run: |
-          python3 - << 'EOF'
-          import os, re, base64, openai
-
-          openai.api_key = os.getenv("OPENAI_API_KEY")
-          resp = openai.chat.completions.create(
-              model="o4-mini",
-              messages=[
-                  {"role":"system","content":"You are Aurena Ascendant."},
-                  {"role":"user","content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
-              ]
-          )
-          raw = resp.choices[0].message.content
-
-          # strip fences/quotes, whitespace, keep base64 chars, then pad
-          raw = raw.strip().strip("`\"'")
-          raw = re.sub(r'\s+', '', raw)
-          b64 = re.sub(r'[^A-Za-z0-9+/=]', '', raw)
-          pad = (-len(b64)) % 4
-          if pad:
-              b64 += "=" * pad
-
-          data = base64.b64decode(b64)
-          with open("genesis-archive.zip","wb") as f:
-              f.write(data)
-          EOF
+          zip -r genesis-archive.zip \
+            meta-framework \
+            modules \
+            pattern-families \
+            mutation-vault \
+            execution-engine \
+            discipline-layer \
+            audit-logs \
+            trade-logs \
+            scripts \
+            triggers \
+            metadata
 
       - name: Commit & push genesis-archive.zip
         run: |
@@ -83,7 +64,7 @@ jobs:
         with:
           payload: |
             {
-              "text": ":white_check_mark: *Export Genesis Archive* `${{ job.status }}`\n• Repo: `${{ github.repository }}`\n• <${{ github.run_url }}|Details>"
+              "text": ":white_check_mark: *Export Genesis Archive* `${{ job.status }}`\n• <${{ github.run_url }}|Details>"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
