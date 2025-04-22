@@ -18,7 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # we need full history for push
+          fetch-depth: 0   # need full history to push
 
       - name: Install OpenAI SDK
         run: |
@@ -39,7 +39,6 @@ jobs:
               ]
           )
           raw = resp.choices[0].message.content
-          # sanitize & pad base64
           b64 = re.sub(r'[^A-Za-z0-9+/=]', '', raw)
           b64 += '=' * (-len(b64) % 4)
           data = base64.b64decode(b64)
@@ -52,7 +51,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
           git add genesis-archive.zip
-          # only commit if there are changes
+
+          # only commit if changed
           if ! git diff --cached --quiet; then
             git commit -m "ci: update Genesis Archive Shell"
             git push https://x-access-token:${GH_PAT}@github.com/${REPO}.git HEAD:${BRANCH}
