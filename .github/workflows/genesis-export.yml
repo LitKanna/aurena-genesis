@@ -2,8 +2,8 @@ name: Export Genesis Archive
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'     # daily at midnight UTC
+  workflow_dispatch:       # manual trigger
 
 jobs:
   export-shell:
@@ -35,10 +35,9 @@ jobs:
                   {"role": "user",   "content": "Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
               ]
           )
-
-          decoded = base64.b64decode(resp.choices[0].message.content)
+          data = base64.b64decode(resp.choices[0].message.content)
           with open("genesis-archive.zip", "wb") as f:
-              f.write(decoded)
+              f.write(data)
           EOF
 
       - name: Commit & push archive
@@ -46,3 +45,4 @@ jobs:
         with:
           commit_message: "ci: update Genesis Archive Shell"
           file_pattern: "genesis-archive.zip"
+          github_token: ${{ secrets.GH_TOKEN }}
