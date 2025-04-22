@@ -1,0 +1,41 @@
+name: Export Genesis Archive
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  export-shell:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GITHUB_TOKEN:    ${{ secrets.GH_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenAI CLI
+        run: |
+          curl -sSL https://raw.githubusercontent.com/openai/openai-cli/main/install.sh | bash
+          echo 'export PATH="$HOME/.local/bin:$PATH"' >> $GITHUB_ENV
+
+      - name: Generate Genesis Archive (base64 ZIP)
+        id: export
+        run: |
+          openai chat completions create \
+            --model o4-mini \
+            --stream false \
+            --json > response.json << 'EOF'
+You are Aurena Ascendant.
+Prototype: Export Genesis Archive
+(Reply with the ZIP only, encoded as a base64 string.)
+EOF
+          payload=$(jq -r '.choices[0].message.content' response.json)
+          echo "$payload" | base64 -d > genesis-archive.zip
+
+      - name: Commit & push archive
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "ci: update Genesis Archive Shell"
+          file_pattern: "genesis-archive.zip"
