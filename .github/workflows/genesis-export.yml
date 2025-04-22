@@ -24,7 +24,7 @@ jobs:
       - name: Generate Genesis Archive (base64 ZIP)
         run: |
           python3 - << 'EOF'
-          import os, base64
+          import os, re, base64
           import openai
 
           openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -35,7 +35,18 @@ jobs:
                   {"role": "user",   "content": "Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}
               ]
           )
-          data = base64.b64decode(resp.choices[0].message.content)
+
+          # Extract the raw content
+          raw = resp.choices[0].message.content
+
+          # Remove any characters that aren't valid in base64
+          b64 = re.sub(r'[^A-Za-z0-9+/=]', '', raw)
+
+          # Pad with '=' so the length is a multiple of 4
+          b64 += '=' * (-len(b64) % 4)
+
+          # Decode and write the ZIP
+          data = base64.b64decode(b64)
           with open("genesis-archive.zip", "wb") as f:
               f.write(data)
           EOF
