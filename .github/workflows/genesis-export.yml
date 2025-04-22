@@ -11,6 +11,7 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       GITHUB_TOKEN:    ${{ secrets.GH_TOKEN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,11 +27,9 @@ jobs:
           openai chat completions create \
             --model o4-mini \
             --stream false \
-            --json > response.json << 'EOF'
-You are Aurena Ascendant.
-Prototype: Export Genesis Archive
-(Reply with the ZIP only, encoded as a base64 string.)
-EOF
+            --json \
+            --messages '[{"role":"system","content":"You are Aurena Ascendant."},{"role":"user","content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}]' \
+            > response.json
           payload=$(jq -r '.choices[0].message.content' response.json)
           echo "$payload" | base64 -d > genesis-archive.zip
 
