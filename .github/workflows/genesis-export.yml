@@ -16,16 +16,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install OpenAI CLI (via pip)
+      - name: Install OpenAI SDK & CLI
         run: |
           python3 -m pip install --upgrade pip
-          pip install openai-cli
+          pip install openai
 
       - name: Generate Genesis Archive (base64 ZIP)
         id: export
         run: |
-          openai chat completions create \
-            --model o4-mini \
+          openai api chat.completions.create \
+            -m o4-mini \
             --stream false \
             --json \
             --messages '[{"role":"system","content":"You are Aurena Ascendant."},{"role":"user","content":"Prototype: Export Genesis Archive (Reply with the ZIP only, encoded as a base64 string.)"}]' \
