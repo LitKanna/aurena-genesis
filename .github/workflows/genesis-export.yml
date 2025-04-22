@@ -42,18 +42,12 @@ jobs:
               ]
           )
           raw = resp.choices[0].message.content
-
-          # strip Markdown fences or quotes
           raw = raw.strip().strip("`\"'")
-          # remove all whitespace/newlines
           raw = re.sub(r'\s+', '', raw)
-          # keep only base64 chars
           b64 = re.sub(r'[^A-Za-z0-9+/=]', '', raw)
-          # pad so length %4 == 0
           pad = (-len(b64)) % 4
           if pad:
               b64 += "=" * pad
-
           data = base64.b64decode(b64)
           with open("genesis-archive.zip","wb") as f:
               f.write(data)
@@ -75,8 +69,8 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: genesis-latest
-          files: genesis-archive.zip
-          overwrite: true
+          artifact: genesis-archive.zip
+          allowUpdates: true
 
       - name: Notify Slack
         if: always()
