@@ -2,11 +2,11 @@ name: Export Genesis Archive
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'     # daily at midnight UTC
+  workflow_dispatch:       # manual trigger
 
 permissions:
-  contents: write
+  contents: write          # allow pushing commits & managing releases
 
 jobs:
   export-shell:
@@ -42,12 +42,15 @@ jobs:
               ]
           )
           raw = resp.choices[0].message.content
+
+          # strip fences/quotes, whitespace, keep base64 chars, then pad
           raw = raw.strip().strip("`\"'")
           raw = re.sub(r'\s+', '', raw)
           b64 = re.sub(r'[^A-Za-z0-9+/=]', '', raw)
           pad = (-len(b64)) % 4
           if pad:
               b64 += "=" * pad
+
           data = base64.b64decode(b64)
           with open("genesis-archive.zip","wb") as f:
               f.write(data)
@@ -71,6 +74,8 @@ jobs:
           tag: genesis-latest
           artifact: genesis-archive.zip
           allowUpdates: true
+          removeArtifacts: true
+          skipIfReleaseExists: false
 
       - name: Notify Slack
         if: always()
@@ -78,7 +83,7 @@ jobs:
         with:
           payload: |
             {
-              "text": ":white_check_mark: *Export Genesis Archive* `${{ job.status }}`\n• <${{ github.run_url }}|Details>"
+              "text": ":white_check_mark: *Export Genesis Archive* `${{ job.status }}`\n• Repo: `${{ github.repository }}`\n• <${{ github.run_url }}|Details>"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
