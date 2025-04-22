@@ -12,8 +12,8 @@ jobs:
   export-shell:
     runs-on: ubuntu-latest
     env:
-      GH_PAT:       ${{ secrets.GH_TOKEN }}
-      REPO_BRANCH:  main
+      GH_PAT:      ${{ secrets.GH_TOKEN }}
+      REPO_BRANCH: main
 
     steps:
       - name: Checkout with PAT
@@ -24,18 +24,10 @@ jobs:
 
       - name: Archive repository contents
         run: |
-          zip -r genesis-archive.zip \
-            meta-framework \
-            modules \
-            pattern-families \
-            mutation-vault \
-            execution-engine \
-            discipline-layer \
-            audit-logs \
-            trade-logs \
-            scripts \
-            triggers \
-            metadata
+          sudo apt-get update -qq
+          sudo apt-get install -y zip
+          zip -r genesis-archive.zip . \
+            -x ".git/*" "genesis-archive.zip"
 
       - name: Commit & push genesis-archive.zip
         run: |
